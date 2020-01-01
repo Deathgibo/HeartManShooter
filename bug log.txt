@@ -1,5 +1,0 @@
-. memory for Models iffy don't try to dynamically allocate too much for them
-.crashes could occur if emplace_backing when vector capacity is reached
-
--fix-
-. some problems with textures like flash texture doesnt work anymore and whenever I use sniper scope every texture uses it
