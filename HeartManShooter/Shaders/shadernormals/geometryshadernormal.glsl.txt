@@ -1,0 +1,26 @@
+#version 460
+
+layout(triangles) in;
+layout(line_strip,max_vertices=6) out;
+
+uniform mat4 mv_matrix;
+uniform mat4 proj_matrix;
+
+in vec2 texcoords[];
+in vec3 Normals[];
+in vec3 Position[];
+
+void main(void)
+{
+	float length = 1.0f;
+	
+	for(int i = 0;i<3;i++)
+	{
+		gl_Position = gl_in[i].gl_Position; EmitVertex();
+		//gl_Position = gl_in[i].gl_Position + vec4(Normals[i],0.0) * length; EmitVertex();
+		
+		//this way does it in world space first, *we don't need normalmatrix because were just printing a point not actually using normalconverteddata
+		gl_Position = proj_matrix * mv_matrix * vec4(Position[i] + Normals[i]*length,1.0); EmitVertex();
+		EndPrimitive();
+	}
+}

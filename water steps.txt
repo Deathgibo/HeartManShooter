@@ -1,0 +1,9 @@
+-water steps-
+1.) Create two fbos and fill them correctly
+2.) test to make sure the color buffers work by creating 2 guis and using the textures
+3.) now position the cameras correctly for the render pass
+4.) create the correct clip planes for the render pass
+5.) set up all uniforms,etc
+6.) now test to see if color buffers both show the clip planes working and from right angles
+7.) now mix the colors and actually render them to the water and see if it works
+8.) now use projective texturing to see if it works by transforming it to clip space

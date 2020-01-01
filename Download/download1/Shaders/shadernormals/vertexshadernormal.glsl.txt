@@ -1,0 +1,24 @@
+#version 460
+
+layout (location=0) in vec3 position;
+layout (location=1) in vec3 normals;
+layout (location=2) in vec2 texuv;
+
+uniform mat4 mv_matrix;
+uniform mat4 proj_matrix;
+
+out vec2 texcoords;
+out vec3 Normals;
+out vec3 Position;
+
+
+void main(void) 
+{
+	Position = position;
+	gl_Position = proj_matrix * mv_matrix * vec4(position,1.0);
+
+	texcoords = texuv;
+	//mat3 normalmatrix = mat3(transpose(inverse(mv_matrix))); //fancy normalmatrix, expensive, could just send in rotation matrix through uniform in c++ side
+	//Normals = normalize(vec3(proj_matrix*vec4(normalmatrix*normals,0.0)));
+	Normals = normals;
+}

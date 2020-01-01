@@ -1,0 +1,34 @@
+#version 460
+
+out vec4 color;
+
+in vec4 varyingColor;
+in vec2 texcoords;
+in vec4 rectcolor;
+
+layout(binding=1) uniform sampler2D textsample;
+uniform int issphere;
+uniform int renderdepthmap;
+
+layout(binding=3) uniform sampler2D depthmap;
+
+void main(void)
+{
+	if(renderdepthmap == 1)
+	{	
+		color = texture2D(depthmap, texcoords);
+	}
+	else
+	{
+		color = texture(textsample,texcoords);
+		color = vec4(color.xyz,.5);
+		if(color.z <= .1f && color.y <= .1f && color.x <= .1f)
+		{
+			//discard;
+		}
+		if(color.z >= 0.95f && color.y >= 0.95f && color.x >= 0.95f)
+		{
+			discard;
+		}
+	}
+}

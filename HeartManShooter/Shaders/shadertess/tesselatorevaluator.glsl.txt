@@ -1,0 +1,14 @@
+#version 460
+
+layout(quads, equal_spacing, ccw) in;
+
+uniform mat4 mv_matrix;
+uniform mat4 proj_matrix;
+
+void main(void)
+{
+	float u = gl_TessCoord.x;
+	float v = gl_TessCoord.y;
+	gl_Position = proj_matrix * mv_matrix * vec4(u, u ,v,1.0);
+	//gl_Position = vec4(gl_TessCoord.x,gl_TessCoord.y,0,1);
+}

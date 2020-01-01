@@ -1,0 +1,42 @@
+#version 460
+
+out vec4 color;
+in vec4 clipspace;
+in vec2 texcoords;
+in vec3 tocamera;
+
+layout(binding=1) uniform sampler2D reflectionmap;
+layout(binding=2) uniform sampler2D refractionmap;
+layout(binding=0) uniform sampler2D dudvmap;
+
+uniform float movefactor;
+
+const float waveStrength = 0.006;
+
+void main(void)
+{
+	vec2 ndc = clipspace.xy / clipspace.w;
+	ndc = ndc*.5 + .5;
+	vec2 reflecttexcoords = vec2(ndc.x,-ndc.y);
+	vec2 refracttexcoords = vec2(ndc.x,ndc.y);
+	
+	vec2 distortedtexcoords = texture(dudvmap, vec2(texcoords.x + movefactor, texcoords.y)).rg*0.1;
+	distortedtexcoords = texcoords + vec2(distortedtexcoords.x,distortedtexcoords.y + movefactor);
+	vec2 totaldistortion = (texture(dudvmap,distortedtexcoords).rg * 2.0 - 1.0) * waveStrength;
+	
+	reflecttexcoords += totaldistortion;
+	reflecttexcoords.x = clamp(reflecttexcoords.x, 0.001,0.999);
+	reflecttexcoords.y = clamp(reflecttexcoords.y, -0.999,-0.0);
+	refracttexcoords += totaldistortion;
+	refracttexcoords = clamp(refracttexcoords, 0.001,0.999);
+	
+	vec4 reflectcolor = texture(reflectionmap,reflecttexcoords);
+	vec4 refractcolor = texture(refractionmap,refracttexcoords);
+	
+	vec3 viewVector = normalize(tocamera);
+	float refractiveFactor = dot(viewVector, vec3(0.0,1.0,0.0));
+	
+	color = mix(reflectcolor,refractcolor,refractiveFactor);
+	//blue tint
+	color = mix(color,vec4(0.0,0.3,0.5,1.0),0.2);
+}

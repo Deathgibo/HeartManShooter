@@ -1,0 +1,12 @@
+#version 460
+
+layout (location=0) in vec3 position;
+layout (location=1) in vec3 normals;
+layout (location=2) in vec2 texuv;
+
+uniform mat4 m_matrix;
+
+void main(void) 
+{
+	gl_Position = m_matrix * vec4(position,1.0);
+}

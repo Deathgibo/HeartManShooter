@@ -1,0 +1,172 @@
+/*glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glUseProgram(shadermain.program);
+		glUniform1i(shadermain.textsample, 1);
+
+		glUniformMatrix4fv(shadermain.projLoc, 1, GL_FALSE, glm::value_ptr(pMat));
+		vMat = currentcamera->CreateLookAtFunction();
+	
+
+		mMat = glm::mat4(1.0f);
+		mvMat = vMat * mMat;
+		glUniformMatrix4fv(shadermain.mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+		//AwpMap.RenderModel();
+		WorldMap.RenderModel();
+		
+		player1.RenderPlayer(&shadermain);
+
+		if (editormode)
+		{
+			glUniform1i(shadermain.ishitbox, 1);
+			for (int i = 0; i < staticHitBoxes.size(); i++)
+			{
+				mMat = glm::mat4(1.0f);
+				mMat = glm::translate(mMat, staticHitBoxes[i].center);
+				mvMat = vMat * mMat;
+				glUniformMatrix4fv(shadermain.mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+				staticHitBoxes[i].model->RenderMesh();
+			}
+			mMat = glm::mat4(1.0f);
+			mMat = glm::translate(mMat, player1.hitbox.center);
+			mvMat = vMat * mMat;
+			glUniformMatrix4fv(shadermain.mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+			//player1.hitbox.model->RenderMesh();
+
+			for (int i = 0; i < staticHitPlanes.size(); i++)
+			{
+				mMat = glm::mat4(1.0f);
+				mvMat = vMat * mMat;
+				glUniformMatrix4fv(shadermain.mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+				staticHitPlanes[i].model->RenderMesh();
+				for (int j = 0; j < staticHitPlanes[i].hitboxes.size(); j++)
+				{
+					mMat = glm::mat4(1.0f);
+					mMat = glm::translate(mMat, staticHitPlanes[i].hitboxes[j]->center);
+					mvMat = vMat * mMat;
+					glUniformMatrix4fv(shadermain.mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+					staticHitPlanes[i].hitboxes[j]->model->RenderMesh();
+				}
+			}
+
+			glUniform1i(shadermain.ishitbox, 0);
+		}
+		mMat = glm::mat4(1.0f);
+		mMat = glm::scale(mMat, glm::vec3(10,10,10));
+		mvMat = vMat * mMat;
+		glUniformMatrix4fv(shadermain.mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+		Bullet.RenderModel();
+		
+		
+		glUniform1i(shadermain.isflash, 1);
+		mMat = glm::mat4(1.0f);
+		mMat = glm::translate(mMat, glm::vec3(0, 40, 0));
+		mvMat = vMat * mMat;
+		glUniformMatrix4fv(shadermain.mvLoc, 1, GL_FALSE, glm::value_ptr(mvMat));
+		flashtex.UseTexture();
+		flashrect.RenderMesh();
+		glUniform1i(shadermain.isflash, 0);*/
+
+
+
+
+/*glfwPollEvents();
+
+		float thexchange = GetXChange();
+		float theychange = GetYChange();
+
+		camera.handlemouseinput(thexchange, theychange);//*make sure camera mouse is b4 player1 handle and camera position because everything in this frame needs to use same camera directions
+		
+		player1.PlayerUpdate(singlekeys);
+		player1.HandleInput(globalkeys);
+
+		camera.position = player1.position + glm::vec3(0, MarioOffset.y, 0) + MarioOffset.x*glm::normalize(glm::vec3(camera.lookdirection.x, 0, camera.lookdirection.z));
+		camera3Person.handlekeyinput(globalkeys);
+		camera3Person.handlemouseinput(thexchange, 0);
+		camera3Person.position = camera.position + (8.0f*camera.worldupdirection) + (-39.0f*glm::normalize(glm::vec3(camera.lookdirection.x,0,camera.lookdirection.z)));
+		
+		if (!camerafreelock)
+		{
+			cameraFree.handlekeyinput(globalkeys);
+			cameraFree.handlemouseinput(thexchange, theychange);
+		}
+
+		if (editormode)
+		{
+			if (singlekeys[GLFW_KEY_LEFT].key)
+			{
+				camera.yaw--;
+			}
+			if (singlekeys[GLFW_KEY_RIGHT].key)
+			{
+				camera.yaw++;
+			}
+			if (globalkeys[GLFW_KEY_Z])
+			{
+				camerafreelock = !camerafreelock;
+			}
+			if (globalkeys[GLFW_KEY_1])
+			{
+				currentcamera = &camera;
+			}
+			if (globalkeys[GLFW_KEY_2])
+			{
+				currentcamera = &camera3Person;
+			}
+			if (globalkeys[GLFW_KEY_3])
+			{
+				currentcamera = &cameraFree;
+			}
+			if (globalkeys[GLFW_KEY_V])
+			{
+				player1.weapon = &Awp;
+				rotatex -= .11f;
+			}
+			if (globalkeys[GLFW_KEY_B])
+			{
+				player1.weapon = &Ak47;
+				rotatex += .11f;
+			}
+			HandleEditorInput();
+		}
+		else
+		{
+			if (globalkeys[GLFW_KEY_1])
+			{
+				currentcamera = &camera;
+			}
+			if (globalkeys[GLFW_KEY_2])
+			{
+				currentcamera = &camera3Person;
+			}
+			if (globalkeys[GLFW_KEY_3])
+			{
+				currentcamera = &cameraFree;
+			}
+			if (globalkeys[GLFW_KEY_Z])
+			{
+				camerafreelock = !camerafreelock;
+			}
+			if (globalkeys[GLFW_KEY_V])
+			{
+				player1.weapon = &Awp;
+				rotatex -= .11f;
+			}
+			if (globalkeys[GLFW_KEY_B])
+			{
+				player1.weapon = &Ak47;
+				rotatex += .11f;
+			}
+			if (globalkeys[GLFW_KEY_M])
+			{
+				rotatey += .11f;
+			}
+			if (globalkeys[GLFW_KEY_N])
+			{
+				rotatey -= .11f;
+			}
+			if (singlekeys[GLFW_KEY_GRAVE_ACCENT].key)
+			{
+				noclip = !noclip;
+			}
+		}*/

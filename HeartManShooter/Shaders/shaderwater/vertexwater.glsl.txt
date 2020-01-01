@@ -1,0 +1,28 @@
+#version 460
+
+layout (location=0) in vec3 position;
+layout (location=1) in vec3 normals;
+layout (location=2) in vec2 texuv;
+
+uniform mat4 m_matrix;
+uniform mat4 mv_matrix;
+uniform mat4 proj_matrix;
+uniform vec3 cameraposition;
+
+out vec4 clipspace;
+out vec2 texcoords;
+out vec3 tocamera;
+
+const float tiling = 1.0;
+
+void main(void) 
+{
+	
+	vec4 worldPosition = m_matrix * vec4(position,1.0);
+	clipspace = proj_matrix * mv_matrix * vec4(position,1.0);
+	gl_Position = clipspace;
+	
+	texcoords = texuv * tiling;
+	
+	tocamera = cameraposition - worldPosition.xyz;
+}

@@ -1,0 +1,18 @@
+shooting fps or 3rd person game where you walk around find keys,
+theres platformer obstacles, and enemies who shoot you,
+its a single player game with final boss, barney returns
+
+
+implement basic physics, model loading, player movement and gun movement
+
+
+-OPENGL FEATURES- 
+* I want to practice a lot of opengl features
+. gun flare effect
+. shadows and good texturing
+. fog and lights
+. water
+. fire, neon lights(on enemies, boss), explosions
+. main menu
+. gui player menu where you can look at the guns, spin them around, etc
+. shooting and leaving bullet holes in

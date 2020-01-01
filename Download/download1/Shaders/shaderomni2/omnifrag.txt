@@ -1,0 +1,19 @@
+#version 460
+
+layout (location = 0) out vec4 color;
+
+in vec4 worldspace;
+
+uniform vec4 lightPos;
+uniform float far_plane;
+
+uniform int isflash;
+
+void main(void)
+{
+	float lightDistance = length(worldspace.xyz - lightPos.xyz);
+	
+	lightDistance = lightDistance / far_plane;
+	
+	gl_FragDepth = lightDistance;
+}

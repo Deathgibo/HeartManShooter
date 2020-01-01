@@ -1,0 +1,27 @@
+-Lighting-
+.Ambient
+.Diffuse
+.Specular
+.Point lights
+.Spot lights
+.Materials
+.Maybe beam light
+.See if I can do neon lights or something
+.Maybe look at one more advanced lighting
+
+-Opengl Features-
+. lighting
+. shadows
+. fire
+. particle effects
+. fog
+. water
+. reflections, cube maps
+. explosion
+. neon lights
+. gui
+. main menu camera demo, short animations
+. animations?
+. anything with geometry shader or tesselator
+. enemies dissapearing when they die (geometry shader)
+. object outlines

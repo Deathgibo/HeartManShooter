@@ -1,0 +1,29 @@
+#version 460
+
+out vec4 color;
+
+in vec2 texcoords;
+in vec3 originalposition;
+in vec4 Color;
+in float lifetime;
+
+layout(binding=1) uniform sampler2D textsample;
+uniform int textureused;
+
+void main(void)
+{
+
+	if(textureused == 1)
+	{
+		color = texture(textsample,texcoords);
+		if(color.w <= .1f)
+		{
+			discard;
+		}
+		color = color * Color;
+	}
+	else
+	{
+		color = Color;
+	}
+}

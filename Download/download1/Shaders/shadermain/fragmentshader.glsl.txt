@@ -1,0 +1,367 @@
+#version 460
+
+out vec4 color;
+
+in vec4 varyingColor;
+in vec2 texcoords;
+in vec3 originalposition;
+in vec3 Normal;
+in vec3 FragPos;
+in vec4 lightpos;
+
+vec3 thenormal;
+
+layout(binding=1) uniform sampler2D textsample;
+uniform int ishitbox;
+uniform int isflash;
+uniform int isglass;
+
+const int MAX_DIRECTIONAL_LIGHTS = 1;
+const int MAX_POINT_LIGHTS = 7;
+const int MAX_SPOT_LIGHTS = 1;
+
+uniform int pointlightloop = 7;
+uniform int spotlightloop = 1;
+uniform int directionallightloop = 1;
+uniform int pointshadows;
+
+/*Light*/
+
+struct Light
+{
+	vec3 color;
+	float intensity;
+};
+
+struct DirectionalLight
+{
+	Light base;
+	vec3 direction;
+};
+
+struct PointLight
+{
+	Light base;
+	vec3 position;
+	float constant;
+	float linear;
+	float exponent;
+};
+
+struct SpotLight
+{
+	PointLight base;
+	vec3 direction;
+	float cutoff;
+	float procedge;
+};
+struct Material
+{
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+	float shininess;
+};
+
+in vec4 diffuselightpos[MAX_DIRECTIONAL_LIGHTS];
+in vec4 spotlightpos[MAX_SPOT_LIGHTS];
+
+uniform Light ambientlight;
+uniform DirectionalLight diffuselights[MAX_DIRECTIONAL_LIGHTS];
+uniform PointLight pointlights[MAX_POINT_LIGHTS];
+uniform SpotLight spotlights[MAX_SPOT_LIGHTS];
+uniform vec3 eyeposition;
+uniform Material material;
+
+uniform sampler2D diffusedepthmap[MAX_DIRECTIONAL_LIGHTS];
+uniform sampler2D spotdepthmap[MAX_SPOT_LIGHTS];
+uniform samplerCube pointdepthmap[MAX_POINT_LIGHTS];
+uniform float pointfar_planes[MAX_POINT_LIGHTS];
+uniform vec4 pointlightpos[MAX_POINT_LIGHTS];
+
+/*water stuff*/
+uniform int renderingwater;
+in vec4 clipspace;
+in vec3 tocamera;
+
+layout(binding=1) uniform sampler2D reflectionmap;
+layout(binding=2) uniform sampler2D refractionmap;
+layout(binding=0) uniform sampler2D dudvmap;
+layout(binding=22) uniform sampler2D normalmap;
+
+uniform float movefactor;
+
+const float waveStrength = 0.006;
+
+float CalculatePointShadow(PointLight light, int index)
+{
+	vec3 lighttofrag = FragPos - pointlightpos[index].xyz;
+	float closest = texture(pointdepthmap[index],lighttofrag).r;
+	
+	closest *= pointfar_planes[index];
+	
+	float current = length(lighttofrag);
+	
+	float bias = 0.3f;
+	float shadow = 0.0f;
+	if(current - bias > closest)
+	{
+		shadow = 1.0f;
+	}
+
+
+	//color = vec4(vec3(closest / pointfar_planes[index]), 1.0); 
+	//color = vec4(vec3(shadow),1.0);
+
+	return shadow;
+}
+
+float CalculateSpotShadow(Light light, int index)
+{
+	vec3 lightclipspace = spotlightpos[index].xyz / spotlightpos[index].w;
+	lightclipspace = (lightclipspace*0.5) + 0.5;
+	
+	float current = lightclipspace.z;
+	float closest = texture(spotdepthmap[index],lightclipspace.xy).r;
+	
+	float bias = 0.0005f;//0.00005f
+	if(current - bias > closest)
+	{
+		if(current > 1.0)
+		{
+			return 0.0f;
+		}
+		
+		float shadow = 0.0;
+		vec2 texelSize = 1.0 / textureSize(spotdepthmap[index],0);
+		int samples = 1;
+		for(int x = -samples; x <= samples; ++x)
+		{
+			for(int y = -samples; y <= samples; ++y)
+			{
+				float pcfDepth = texture(spotdepthmap[index], lightclipspace.xy + vec2(x, y) * texelSize).r; 
+				shadow += current - bias > pcfDepth ? 1.0 : 0.0;        
+			}    
+		}
+		shadow /= ((samples*2)+1)*((samples*2)+1);
+		
+		return shadow;
+	}
+	return 0.0f;
+}
+float CalculateDirectionalShadow(Light light, int index)
+{
+	vec3 lightclipspace = diffuselightpos[index].xyz / diffuselightpos[index].w;
+	lightclipspace = (lightclipspace*0.5) + 0.5;
+	
+	float current = lightclipspace.z;
+	float closest = texture(diffusedepthmap[index],lightclipspace.xy).r;
+	
+	float bias = 0.001;
+	if(current - bias > closest)
+	{
+		if(current > 1.0)
+		{
+			return 0.0f;
+		}
+		
+		float shadow = 0.0;
+		vec2 texelSize = 1.0 / textureSize(diffusedepthmap[index],0);
+		int samples = 1;
+		for(int x = -samples; x <= samples; ++x)
+		{
+			for(int y = -samples; y <= samples; ++y)
+			{
+				float pcfDepth = texture(diffusedepthmap[index], lightclipspace.xy + vec2(x, y) * texelSize).r; 
+				shadow += current - bias > pcfDepth ? 1.0 : 0.0;        
+			}    
+		}
+		shadow /= ((samples*2)+1)*((samples*2)+1);
+		
+		return shadow;
+	}
+	return 0.0f;
+}
+vec4 CalculateLightByDirection(Light light, vec3 direction, float shadowfactor)
+{
+	vec4 finalcolor = vec4(0,0,0,0);
+	
+	/*Diffuse*/
+	vec4 diffusecolor = vec4(0,0,0,0);
+	float dirfactor = max(dot(normalize(thenormal),normalize(-direction)),0.0f);
+	vec3 diffusebase = vec3(light.color.x * material.diffuse.x, light.color.y * material.diffuse.y,
+	light.color.z * material.diffuse.z);
+	diffusecolor = vec4(diffusebase * light.intensity * dirfactor,0.0f);
+	
+	/*Specular*/
+	vec4 specularcolor = vec4(0,0,0,0);
+	if(diffusecolor.x > 0.0f && diffusecolor.y > 0.0f && diffusecolor.z > 0.0f)
+	{
+		vec3 fragtoeye = normalize(eyeposition - FragPos);
+		vec3 reflectedlight = normalize(reflect(direction,normalize(thenormal)));
+		float specfactor = max(dot(fragtoeye,reflectedlight),0.0);
+		
+		specfactor = pow(specfactor,material.shininess);
+		vec3 specbase = vec3(light.color.x * material.specular.x, light.color.y * material.specular.y,
+		light.color.z * material.specular.z);
+		specularcolor = vec4(specbase * specfactor,0.0f);
+	}
+	
+	finalcolor = (1.0f-shadowfactor) * (diffusecolor + specularcolor);
+	
+	return finalcolor;
+}
+
+vec4 CalculateDirecitonalLights()
+{
+	vec4 finalcolor = vec4(0.0f,0.0f,0.0f,0.0f);
+	float shadowfactor = 1.0f;
+	for(int i = 0;i<directionallightloop;i++)
+	{
+		shadowfactor = CalculateDirectionalShadow(diffuselights[i].base, i);
+		finalcolor += CalculateLightByDirection(diffuselights[i].base,diffuselights[i].direction,shadowfactor);
+	}
+	
+	/*Ambient*/
+	vec4 ambientcolor = vec4(ambientlight.color.x * material.ambient.x, ambientlight.color.y * material.ambient.y,ambientlight.color.z * material.ambient.z,1.0f) * ambientlight.intensity;
+	finalcolor += ambientcolor;
+	
+	return finalcolor;
+}
+
+vec4 CalculateLightByPoint(PointLight plight, float shadowfactor)
+{	
+	vec4 pointcolor = vec4(0.0f,0.0f,0.0f,0.0f);
+	vec3 pointtofrag = FragPos - plight.position;
+	float distance = length(pointtofrag);
+	pointtofrag = normalize(pointtofrag);
+	
+	pointcolor = CalculateLightByDirection(plight.base,pointtofrag,shadowfactor);
+	float attenuation =  (plight.exponent * distance * distance) +
+					(plight.linear * distance) +
+					plight.constant;
+		
+	return (pointcolor/attenuation);	
+}
+vec4 CalculatePointLights()
+{
+	vec4 finalcolor = vec4(0,0,0,0);
+	
+	for(int i = 0;i<pointlightloop;i++)
+	{
+		finalcolor += CalculateLightByPoint(pointlights[i],0.0f);
+	}
+
+	return finalcolor;
+}
+
+vec4 CalculateSpotLights()
+{
+	vec4 finalcolor = vec4(0,0,0,0);
+	
+	for(int i = 0;i<spotlightloop;i++)
+	{
+		vec3 spottofrag = normalize(FragPos - spotlights[i].base.position);
+		float theta = dot(spotlights[i].direction,spottofrag);
+		
+		if(theta > spotlights[i].cutoff)
+		{
+			float shadowfactor = CalculateSpotShadow(spotlights[i].base.base,i);
+			vec4 spotcolor = CalculateLightByPoint(spotlights[i].base, shadowfactor);
+			
+			/*float spotfactor = 1.0f;
+			if(theta < spotlights[i].procedge)
+			{
+				spotfactor = 1.0f - (spotlights[i].procedge - theta)/(spotlights[i].procedge - spotlights[i].cutoff);//100% within circle then scales linearly
+			}*/
+			
+			float spotfactor = 1.0f - cos( ((theta - spotlights[i].cutoff)/(1 - spotlights[i].cutoff)) * 1.57f );//quadratically scale with cos
+				
+			//float spotfactor = (theta - spotlights[i].cutoff)/(1 - spotlights[i].cutoff); //linear all way through
+			//float spotfactor = clamp((theta - spotlights[i].procedge)/(spotlights[i].cutoff - spotlights[i].procedge),0.0,1.0); //linear, then once outside exponentially drops
+			spotcolor = spotcolor * spotfactor;
+			
+			finalcolor +=spotcolor;
+		}
+	}
+
+	return finalcolor;
+}
+
+void main(void)
+{
+	if(ishitbox == 1)
+	{
+		color = varyingColor;
+	}
+	else if(isglass == 1)
+	{
+		color = vec4(1,1,1,.3f);
+	}
+	else if(isflash == 1)
+	{
+		color = texture(textsample,texcoords);
+		color = vec4(color.xyz,.5);
+		if(color.z <= .1f && color.y <= .1f && color.x <= .1f)
+		{
+			discard;
+		}
+	}
+	else if(renderingwater == 1)
+	{
+		vec2 ndc = clipspace.xy / clipspace.w;
+		ndc = ndc*.5 + .5;
+		vec2 reflecttexcoords = vec2(ndc.x,-ndc.y);
+		vec2 refracttexcoords = vec2(ndc.x,ndc.y);
+		
+		vec2 distortedtexcoords = texture(dudvmap, vec2(texcoords.x + movefactor, texcoords.y)).rg*0.1;
+		distortedtexcoords = texcoords + vec2(distortedtexcoords.x,distortedtexcoords.y + movefactor);
+		vec2 totaldistortion = (texture(dudvmap,distortedtexcoords).rg * 2.0 - 1.0) * waveStrength;
+		
+		reflecttexcoords += totaldistortion;
+		reflecttexcoords.x = clamp(reflecttexcoords.x, 0.001,0.999);
+		reflecttexcoords.y = clamp(reflecttexcoords.y, -0.999,-0.0);
+		refracttexcoords += totaldistortion;
+		refracttexcoords = clamp(refracttexcoords, 0.001,0.999);
+		
+		vec4 reflectcolor = texture(reflectionmap,reflecttexcoords);
+		vec4 refractcolor = texture(refractionmap,refracttexcoords);
+		
+		vec3 viewVector = normalize(tocamera);
+		float refractiveFactor = dot(viewVector, vec3(0.0,1.0,0.0));
+		refractiveFactor = pow(refractiveFactor,1.5);
+		
+		color = mix(reflectcolor,refractcolor,refractiveFactor);
+		//blue tint
+		color = mix(color,vec4(0.0,0.3,0.5,1.0),0.2);
+		
+		vec4 normalMapColor = texture(normalmap,distortedtexcoords);
+		thenormal = vec3(normalMapColor.r * 2.0 - 1.0, normalMapColor.b, normalMapColor.g * 2.0 - 1.0);
+		thenormal = normalize(thenormal);
+		
+		vec4 finalcolor = vec4(0,0,0,0);
+		finalcolor += CalculateDirecitonalLights();
+		finalcolor += CalculatePointLights();
+		finalcolor += CalculateSpotLights();
+		finalcolor.w = 1;
+		
+		color = color * finalcolor;
+
+	}
+	else
+	{
+		color = texture(textsample,texcoords);//textsample
+		color = vec4(color.xyz,.5);
+		
+		thenormal = Normal;
+		
+		vec4 finalcolor = vec4(0,0,0,0);
+		finalcolor += CalculateDirecitonalLights();
+		finalcolor += CalculatePointLights();
+		finalcolor += CalculateSpotLights();
+		finalcolor.w = 1;
+		
+		//finalcolor = vec4(.4,.4,.4,1);
+		color = color * finalcolor;
+	}
+}

@@ -1,0 +1,38 @@
+-map ideas-
+fountain with water and water particles
+two statues made of marble material or something
+probably just a glass wall
+skybox with transparent windows maybe
+have a door covered in fire
+
+
+-story-
+im in castle room
+then maybe i go in sewer, make it a little foggy
+then i go to an outside area
+then i go into disco, neon room, some lights are pusling and changing colors, disco ball
+then im at a the line sorround by lava some cool platformers
+then the final room 
+then the endings the grassy area with tree and sun
+can have metal boxes maybe be reflecting a cubemap texture
+one part I can have glass boxes by using the cubemap and refracting it on some texture
+
+can have steam particles going through roof
+maybe make area where you walk through steam particles
+
+boss will be mecha barney his head is still alive but mecha body
+enemies can be billy mays and toilets
+can make a bathroom stage
+enemies can just be possesed kids as zombies
+evil cupids
+probably more platforms though less enemies
+if theres enemies they will probably just charge at you and you shoot them
+also in some platforms i can make it so you have to shoot things to activate others
+
+-boss-
+mecha barney
+you have to shoot his armor off
+then you can kill him
+he has lazers and demons
+lil pump is dead in the corner
+

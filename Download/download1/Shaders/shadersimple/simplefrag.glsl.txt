@@ -1,0 +1,12 @@
+#version 460
+
+out vec4 color;
+
+uniform sampler2D textsample;
+in vec2 texcoords;
+
+void main(void)
+{
+	color = texture(textsample,texcoords);
+	//color = vec4(1.0,0.0,0.0,1.0);
+}

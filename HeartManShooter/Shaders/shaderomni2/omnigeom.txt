@@ -1,0 +1,21 @@
+#version 460
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices=3) out;
+
+in vec4 worldspacegeom[];
+uniform mat4 pointMatrices[6];
+out vec4 worldspace;
+uniform int isflash;
+
+void main(void)
+{
+	gl_Layer = 5;	
+	for(int i = 0;i<3;i++)
+	{
+		worldspace = gl_in[i].gl_Position;
+		gl_Position = pointMatrices[5] * worldspace;
+		EmitVertex();
+	}
+	EndPrimitive();
+}
